@@ -1,26 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline | Comrade Shop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', sans-serif; 
-               display: flex; flex-direction: column; align-items: center; justify-content: center; 
-               height: 100vh; margin: 0; text-align: center; }
-        .icon-circle { background: #2a2a2a; width: 80px; height: 80px; border-radius: 50%; 
-                       display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-        h1 { font-size: 24px; margin: 0; color: #ff4444; letter-spacing: 1px; }
-        p { color: #aaaaaa; margin: 10px 0 30px 0; }
-        .retry-btn { background: #ff4444; color: white; border: none; padding: 12px 30px; 
-                     border-radius: 25px; font-weight: bold; cursor: pointer; text-decoration: none;
-                     box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3); }
+        :root {
+            --bs-primary: #38e07b;
+            --text-dark: #0e1a13;
+        }
+        body {
+            background-color: #f8fbfa;
+            color: var(--text-dark);
+            font-family: 'Manrope', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* Animation for the icon */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.2; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
+        .icon-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .pulse {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: var(--bs-primary);
+            border-radius: 50%;
+            z-index: -1;
+            top: 50%;
+            left: 50%;
+            margin-top: -50px;
+            margin-left: -50px;
+            animation: pulse-ring 3s infinite ease-in-out;
+        }
+
+        .icon-box {
+            background: white;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(56, 224, 123, 0.2);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0;
+            color: var(--text-dark);
+        }
+
+        p {
+            color: #51946c;
+            margin: 15px 0 40px 0;
+            max-width: 300px;
+            line-height: 1.6;
+        }
+
+        .retry-btn {
+            background: var(--bs-primary);
+            color: #122017;
+            border: none;
+            padding: 15px 45px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(56, 224, 123, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .retry-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* SVG Icon styling */
+        svg {
+            width: 40px;
+            height: 40px;
+            fill: var(--bs-primary);
+        }
     </style>
 </head>
 <body>
-    <div class="icon-circle">
-        <span style="font-size: 40px;">📡</span>
+
+    <div class="icon-container">
+        <div class="pulse"></div>
+        <div class="icon-box">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l10.08 12.56c.8 1 2.32 1 3.12 0L23.64 7zm-12.89 9.3l-6.97-8.69C5.39 6.53 8.35 5 12 5c3.65 0 6.61 1.53 8.22 2.61l-6.97 8.69c-.4.51-1.21.51-1.61 0z"/>
+                <path d="M0 0h24v24H0V0z" fill="none"/>
+                <line x1="1" y1="1" x2="23" y2="23" stroke="black" stroke-width="2" />
+            </svg>
+        </div>
     </div>
-    <h1>CONNECTION LOST</h1>
-    <p>Comrade, the shop is currently unreachable.</p>
-    <button class="retry-btn" onclick="Android.retry()">RETRY CONNECTION</button>
+
+    <h1><b>You're Currently Offline</b></h1>
+    <p>This page couldn't load. Please check your Internet connection and try again.</p>
+
+    <button class="retry-btn" onclick="retryConnection()">TRY AGAIN</button>
+
+    <script>
+        function retryConnection() {
+            // Check if the app has a Javascript Interface named 'Android'
+            if (window.Android && window.Android.retry) {
+                window.Android.retry();
+            } else {
+                // Fallback for browser testing
+                window.location.reload();
+            }
+        }
+    </script>
 </body>
 </html>
