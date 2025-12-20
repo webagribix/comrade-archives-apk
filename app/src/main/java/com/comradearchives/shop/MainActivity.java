@@ -1,6 +1,7 @@
 package com.comradearchives.shop;
 
 import android.app.Activity;
+import android.app.AlertDialog; // Added for the dialog
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -27,7 +28,6 @@ public class MainActivity extends Activity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         
-        // Combined Interface for Retry and Auto-Update
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -39,6 +39,22 @@ public class MainActivity extends Activity {
 
         webView.loadUrl("https://comradearchives.hstn.me/comrade_shop/");
         setContentView(webView);
+    }
+
+    // Logic: If WebView can go back, go back. 
+    // If not, ask the user if they want to exit the app.
+    @Override
+    public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            new AlertDialog.Builder(this)
+                .setTitle("Exit App")
+                .setMessage("Are you sure you want to exit?")
+                .setPositiveButton("Yes", (dialog, which) -> finish())
+                .setNegativeButton("No", null)
+                .show();
+        }
     }
 
     public class WebAppInterface {
@@ -70,7 +86,7 @@ public class MainActivity extends Activity {
                     DownloadManager.Query q = new DownloadManager.Query();
                     q.setFilterById(downloadId);
                     Cursor cursor = manager.query(q);
-                    if (cursor.moveToFirst()) {
+                    if (cursor != null && cursor.moveToFirst()) {
                         int bytes_downloaded = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
                         int bytes_total = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
 
@@ -83,7 +99,7 @@ public class MainActivity extends Activity {
                             runOnUiThread(() -> webView.loadUrl("javascript:updateDownloadProgress(" + progress + ")"));
                         }
                     }
-                    cursor.close();
+                    if (cursor != null) cursor.close();
                 }
                 installApk(fileName);
             }).start();
