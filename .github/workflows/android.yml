@@ -1,33 +1,27 @@
-name: Android CI Build & Release
+name: Comrade Shop Build & Notify
 
 on:
   push:
-    branches: [ "main" ]
+    tags:
+      - 'v*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: set up JDK 11
-      uses: actions/setup-java@v3
-      with:
-        java-version: '11'
-        distribution: 'temurin'
-        cache: gradle
+      - uses: actions/checkout@v3
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      - name: set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Build with Gradle
-      run: ./gradlew assembleRelease
+      - name: Build Release APK
+        run: bash ./gradlew assembleRelease
 
-    - name: Create Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/') # Or remove this line to release on every push
-      with:
-        files: app/build/outputs/apk/release/app-release.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Since you're manually uploading the APK to Drive for now, 
+      # we just tell the website that the version number has changed.
+      - name: Update Website Version Manifest
+        run: |
+          curl "https://comradearchives.hstn.me/comrade_shop/update_version.php?key=${{ secrets.WEBSITE_UPDATE_KEY }}&code=${{ github.run_number }}&name=${{ github.ref_name }}"
