@@ -23,8 +23,9 @@ jobs:
       - name: Build Signed APK
         run: ./gradlew assembleRelease
         env:
-          KEY_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          # These bridge the gap between GitHub Secrets and your build.gradle
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
