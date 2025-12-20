@@ -1,0 +1,14 @@
+name: Generate Keystore
+on: workflow_dispatch # Allows you to run it manually
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Key
+        run: |
+          keytool -genkey -v -keystore comrade.jks -alias comrade -keyalg RSA -keysize 2048 -validity 10000 -storepass passnewupdatenowstore -keypass passnewupdatenowkey -dname "CN=Comrade, OU=Shop, O=Archives, L=Njoro, ST=Nakuru, C=KE"
+      - name: Upload Key
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-private-key
+          path: comrade.jks
