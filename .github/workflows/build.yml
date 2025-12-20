@@ -18,7 +18,7 @@ jobs:
           chmod +x gradlew
 
       - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/comrade.jks
+        run: echo "${{ secrets.KEY_STORE_FILE }}" | base64 -d > app/comrade.jks
 
       - name: Build Signed APK
         run: ./gradlew assembleRelease
