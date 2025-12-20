@@ -36,8 +36,6 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {
-                // FIX: If user reaches index after login, or recovers from error, clear history 
-                // so they can't "back" into login or error pages.
                 if (url.endsWith("/comrade_shop/") || url.endsWith("index.php")) {
                     view.clearHistory();
                 }
@@ -62,16 +60,18 @@ public class MainActivity extends Activity {
         }
     }
 
-    // CUSTOM BRANDED EXIT DIALOG
     private void showBrandExitDialog() {
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
-        // Ensure you create a simple layout called 'dialog_exit.xml' in your res/layout
         View dialogView = inflater.inflate(R.layout.dialog_exit, null);
         builder.setView(dialogView);
 
         final android.app.AlertDialog dialog = builder.create();
-        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        
+        // This ensures the custom layout handles the background
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
 
         Button btnExit = dialogView.findViewById(R.id.btn_exit_yes);
         Button btnStay = dialogView.findViewById(R.id.btn_exit_no);
@@ -91,8 +91,8 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            // This pulls the real version from your build.gradle
-            return BuildConfig.VERSION_CODE;
+            // BuildConfig is automatically generated during build
+            return com.comradearchives.shop.BuildConfig.VERSION_CODE;
         }
 
         @JavascriptInterface
@@ -118,19 +118,25 @@ public class MainActivity extends Activity {
                     q.setFilterById(downloadId);
                     Cursor cursor = manager.query(q);
                     if (cursor != null && cursor.moveToFirst()) {
-                        int bytes_downloaded = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
-                        int bytes_total = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                        int statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                        int bytesDownloadedIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+                        int bytesTotalIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
 
-                        if (cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL) {
+                        if (statusIndex != -1 && cursor.getInt(statusIndex) == DownloadManager.STATUS_SUCCESSFUL) {
                             downloading = false;
                         }
 
-                        if (bytes_total > 0) {
-                            final int progress = (int) ((bytes_downloaded * 100L) / bytes_total);
-                            runOnUiThread(() -> webView.loadUrl("javascript:updateDownloadProgress(" + progress + ")"));
+                        if (bytesDownloadedIndex != -1 && bytesTotalIndex != -1) {
+                            int bytes_downloaded = cursor.getInt(bytesDownloadedIndex);
+                            int bytes_total = cursor.getInt(bytesTotalIndex);
+                            if (bytes_total > 0) {
+                                final int progress = (int) ((bytes_downloaded * 100L) / bytes_total);
+                                runOnUiThread(() -> webView.loadUrl("javascript:updateDownloadProgress(" + progress + ")"));
+                            }
                         }
                     }
                     if (cursor != null) cursor.close();
+                    try { Thread.sleep(500); } catch (InterruptedException e) {}
                 }
                 installApk(fileName);
             }).start();
