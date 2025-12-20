@@ -1,7 +1,9 @@
 plugins { id 'com.android.application' }
+
 android {
     namespace 'com.comradearchives.shop'
     compileSdk 34
+
     defaultConfig {
         applicationId "com.comradearchives.shop"
         minSdk 21
@@ -9,4 +11,9 @@ android {
         versionCode 1
         versionName "1.0"
     }
+}
+
+dependencies {
+    // Provides FileProvider and other core AndroidX APIs
+    implementation 'androidx.core:core:1.12.0'
 }
