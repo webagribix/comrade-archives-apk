@@ -12,10 +12,10 @@ android {
 
     signingConfigs {
         release {
-            // GitHub Actions decodes your secret into this path
+            // Matches the path created in the 'Decode Keystore' step
             storeFile file("comrade.jks") 
             
-            // These names now match the "env" section in your build.yml
+            // These MUST match the 'env' names in build.yml
             storePassword System.getenv("KEY_STORE_PASSWORD")
             keyAlias "comrade"
             keyPassword System.getenv("KEY_PASSWORD")
@@ -45,7 +45,6 @@ android {
 }
 
 dependencies {
-    // These lines fix the "package androidx.core.content does not exist" error
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core:1.12.0'
     implementation 'com.google.android.material:material:1.11.0'
