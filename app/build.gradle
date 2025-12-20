@@ -10,6 +10,17 @@ android {
         buildConfig true
     }
 
+    // Secret Method: Define the signing configuration
+    signingConfigs {
+        release {
+            // This looks for a file named comrade.jks in your app folder during build
+            storeFile file("comrade.jks") 
+            storePassword System.getenv("KEYSTORE_PASSWORD")
+            keyAlias System.getenv("ALIAS")
+            keyPassword System.getenv("KEY_PASSWORD")
+        }
+    }
+
     defaultConfig {
         applicationId "com.comradearchives.shop"
         minSdk 21
@@ -20,20 +31,10 @@ android {
 
     buildTypes {
         release {
+            // Apply the signing config to the release build
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-}
-
-dependencies {
-    // This line fixes the "package androidx.core.content does not exist" error
-    implementation 'androidx.core:core:1.12.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
 }
