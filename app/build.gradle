@@ -1,5 +1,5 @@
-plugins { 
-    id 'com.android.application' 
+plugins {
+    id 'com.android.application'
 }
 
 android {
@@ -12,13 +12,13 @@ android {
 
     signingConfigs {
         release {
-            // GitHub Actions will decode your secret into this file path
+            // GitHub Actions decodes your secret into this path
             storeFile file("comrade.jks") 
             
-            // Fetches variables from the 'env' section of your GitHub Action [.yml]
-            storePassword System.getenv("KEY_STORE_PASSWORD")
-            keyAlias System.getenv("ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
+            // These names now match the "env" section in your build.yml
+            storePassword System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias "comrade"
+            keyPassword System.getenv("SIGNING_KEY_PASSWORD")
         }
     }
 
@@ -37,4 +37,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // These lines fix the "package androidx.core.content does not exist" error
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'com.google.android.material:material:1.11.0'
 }
