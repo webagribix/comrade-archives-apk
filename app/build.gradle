@@ -10,12 +10,13 @@ android {
         buildConfig true
     }
 
-    // Secret Method: Define the signing configuration
     signingConfigs {
         release {
-            // This looks for a file named comrade.jks in your app folder during build
+            // GitHub Actions will decode your secret into this file path
             storeFile file("comrade.jks") 
-            storePassword System.getenv("KEYSTORE_PASSWORD")
+            
+            // Fetches variables from the 'env' section of your GitHub Action [.yml]
+            storePassword System.getenv("KEY_STORE_PASSWORD")
             keyAlias System.getenv("ALIAS")
             keyPassword System.getenv("KEY_PASSWORD")
         }
@@ -31,7 +32,6 @@ android {
 
     buildTypes {
         release {
-            // Apply the signing config to the release build
             signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
