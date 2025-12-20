@@ -100,16 +100,29 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public void downloadUpdate(String fileUrl) {
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(fileUrl));
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
-            
-            final String fileName = "comrade_update.apk";
-            request.setDestinationInExternalFilesDir(mContext, Environment.DIRECTORY_DOWNLOADS, fileName);
+public void downloadUpdate(String fileUrl) {
+    // Check if we have storage permission (for older Android)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+        checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+        
+        // Request the permission
+        requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+        return; // Stop here, the user needs to click again after allowing
+    }
 
-            DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
-            final long downloadId = manager.enqueue(request);
+    // If we have permission (or are on Android 10+ where scoped storage handles it), start download
+    startDownloadProcess(fileUrl);
+}
 
+private void startDownloadProcess(String fileUrl) {
+    DownloadManager.Request request = new DownloadManager.Request(Uri.parse(fileUrl));
+    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+    
+    final String fileName = "comrade_update.apk";
+    request.setDestinationInExternalFilesDir(mContext, Environment.DIRECTORY_DOWNLOADS, fileName);
+
+    DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+    final long downloadId = manager.enqueue(request);
             new Thread(() -> {
                 boolean downloading = true;
                 while (downloading) {
