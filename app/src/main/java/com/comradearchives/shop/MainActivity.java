@@ -1,7 +1,7 @@
 package com.comradearchives.shop;
 
 import android.app.Activity;
-import android.app.AlertDialog; // Added for the dialog
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +28,7 @@ public class MainActivity extends Activity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         
+        // Link JavaScript "Android" object to this Java class
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -41,8 +42,6 @@ public class MainActivity extends Activity {
         setContentView(webView);
     }
 
-    // Logic: If WebView can go back, go back. 
-    // If not, ask the user if they want to exit the app.
     @Override
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) {
@@ -72,12 +71,15 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void downloadUpdate(String fileUrl) {
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(fileUrl));
+            // Hidden notification keeps the experience "In-App"
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
             
             final String fileName = "comrade_update.apk";
             request.setDestinationInExternalFilesDir(mContext, Environment.DIRECTORY_DOWNLOADS, fileName);
 
             DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+            if (manager == null) return;
+            
             final long downloadId = manager.enqueue(request);
 
             new Thread(() -> {
@@ -86,20 +88,31 @@ public class MainActivity extends Activity {
                     DownloadManager.Query q = new DownloadManager.Query();
                     q.setFilterById(downloadId);
                     Cursor cursor = manager.query(q);
+                    
                     if (cursor != null && cursor.moveToFirst()) {
-                        int bytes_downloaded = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
-                        int bytes_total = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                        // Safety: Get column indices first to prevent crashes
+                        int downloadedIdx = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+                        int totalIdx = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+                        int statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
 
-                        if (cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL) {
-                            downloading = false;
-                        }
+                        if (downloadedIdx != -1 && totalIdx != -1) {
+                            int bytes_downloaded = cursor.getInt(downloadedIdx);
+                            int bytes_total = cursor.getInt(totalIdx);
 
-                        if (bytes_total > 0) {
-                            final int progress = (int) ((bytes_downloaded * 100L) / bytes_total);
-                            runOnUiThread(() -> webView.loadUrl("javascript:updateDownloadProgress(" + progress + ")"));
+                            if (cursor.getInt(statusIdx) == DownloadManager.STATUS_SUCCESSFUL) {
+                                downloading = false;
+                            }
+
+                            if (bytes_total > 0) {
+                                final int progress = (int) ((bytes_downloaded * 100L) / bytes_total);
+                                // Push the percentage back to the web Progress Bar
+                                runOnUiThread(() -> webView.loadUrl("javascript:updateDownloadProgress(" + progress + ")"));
+                            }
                         }
                     }
                     if (cursor != null) cursor.close();
+                    
+                    try { Thread.sleep(500); } catch (Exception e) {} // Prevent CPU overload
                 }
                 installApk(fileName);
             }).start();
@@ -107,6 +120,7 @@ public class MainActivity extends Activity {
 
         private void installApk(String fileName) {
             File file = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName);
+            // This authority MUST match your AndroidManifest.xml provider
             Uri contentUri = FileProvider.getUriForFile(mContext, mContext.getPackageName() + ".provider", file);
             
             Intent intent = new Intent(Intent.ACTION_VIEW);
