@@ -1,7 +1,6 @@
 package com.comradearchives.shop;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -9,10 +8,14 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.TextView;
 import androidx.core.content.FileProvider;
 import java.io.File;
 
@@ -28,10 +31,18 @@ public class MainActivity extends Activity {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
         
-        // Link JavaScript "Android" object to this Java class
         webView.addJavascriptInterface(new WebAppInterface(this), "Android");
 
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                // FIX: If user reaches index after login, or recovers from error, clear history 
+                // so they can't "back" into login or error pages.
+                if (url.endsWith("/comrade_shop/") || url.endsWith("index.php")) {
+                    view.clearHistory();
+                }
+            }
+
             @Override
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                 view.loadUrl("file:///android_asset/error.html");
@@ -47,13 +58,28 @@ public class MainActivity extends Activity {
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
-            new AlertDialog.Builder(this)
-                .setTitle("Exit App")
-                .setMessage("Are you sure you want to exit?")
-                .setPositiveButton("Yes", (dialog, which) -> finish())
-                .setNegativeButton("No", null)
-                .show();
+            showBrandExitDialog();
         }
+    }
+
+    // CUSTOM BRANDED EXIT DIALOG
+    private void showBrandExitDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        // Ensure you create a simple layout called 'dialog_exit.xml' in your res/layout
+        View dialogView = inflater.inflate(R.layout.dialog_exit, null);
+        builder.setView(dialogView);
+
+        final android.app.AlertDialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        Button btnExit = dialogView.findViewById(R.id.btn_exit_yes);
+        Button btnStay = dialogView.findViewById(R.id.btn_exit_no);
+
+        btnExit.setOnClickListener(v -> finish());
+        btnStay.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
     public class WebAppInterface {
@@ -64,6 +90,12 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public int getAppVersionCode() {
+            // This pulls the real version from your build.gradle
+            return BuildConfig.VERSION_CODE;
+        }
+
+        @JavascriptInterface
         public void retry() {
             runOnUiThread(() -> webView.loadUrl("https://comradearchives.hstn.me/comrade_shop/"));
         }
@@ -71,15 +103,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void downloadUpdate(String fileUrl) {
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(fileUrl));
-            // Hidden notification keeps the experience "In-App"
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
             
             final String fileName = "comrade_update.apk";
             request.setDestinationInExternalFilesDir(mContext, Environment.DIRECTORY_DOWNLOADS, fileName);
 
             DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
-            if (manager == null) return;
-            
             final long downloadId = manager.enqueue(request);
 
             new Thread(() -> {
@@ -88,31 +117,20 @@ public class MainActivity extends Activity {
                     DownloadManager.Query q = new DownloadManager.Query();
                     q.setFilterById(downloadId);
                     Cursor cursor = manager.query(q);
-                    
                     if (cursor != null && cursor.moveToFirst()) {
-                        // Safety: Get column indices first to prevent crashes
-                        int downloadedIdx = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
-                        int totalIdx = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
-                        int statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                        int bytes_downloaded = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                        int bytes_total = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
 
-                        if (downloadedIdx != -1 && totalIdx != -1) {
-                            int bytes_downloaded = cursor.getInt(downloadedIdx);
-                            int bytes_total = cursor.getInt(totalIdx);
+                        if (cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL) {
+                            downloading = false;
+                        }
 
-                            if (cursor.getInt(statusIdx) == DownloadManager.STATUS_SUCCESSFUL) {
-                                downloading = false;
-                            }
-
-                            if (bytes_total > 0) {
-                                final int progress = (int) ((bytes_downloaded * 100L) / bytes_total);
-                                // Push the percentage back to the web Progress Bar
-                                runOnUiThread(() -> webView.loadUrl("javascript:updateDownloadProgress(" + progress + ")"));
-                            }
+                        if (bytes_total > 0) {
+                            final int progress = (int) ((bytes_downloaded * 100L) / bytes_total);
+                            runOnUiThread(() -> webView.loadUrl("javascript:updateDownloadProgress(" + progress + ")"));
                         }
                     }
                     if (cursor != null) cursor.close();
-                    
-                    try { Thread.sleep(500); } catch (Exception e) {} // Prevent CPU overload
                 }
                 installApk(fileName);
             }).start();
@@ -120,7 +138,6 @@ public class MainActivity extends Activity {
 
         private void installApk(String fileName) {
             File file = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName);
-            // This authority MUST match your AndroidManifest.xml provider
             Uri contentUri = FileProvider.getUriForFile(mContext, mContext.getPackageName() + ".provider", file);
             
             Intent intent = new Intent(Intent.ACTION_VIEW);
