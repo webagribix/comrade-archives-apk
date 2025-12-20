@@ -5,6 +5,10 @@ plugins {
 android {
     namespace 'com.comradearchives.shop'
     compileSdk 34
+    
+    buildFeatures {
+        buildConfig true
+    }
 
     defaultConfig {
         applicationId "com.comradearchives.shop"
