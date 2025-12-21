@@ -51,8 +51,8 @@ public class MainActivity extends Activity {
         webView.loadUrl("https://comradearchives.hstn.me/comrade_shop/");
         setContentView(webView);
 
-        // VISUAL CHANGE FOR UPDATE TEST
-        Toast.makeText(this, "Comrade Shop Updated to v2.6", Toast.LENGTH_LONG).show();
+        // Visual confirmation for the current version
+        Toast.makeText(this, "Comrade Shop v2.6", Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -94,8 +94,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            // Updated to 4 to match your new build.gradle version
-            return 4;
+            return 5; // Keep this matched with build.gradle
         }
 
         @JavascriptInterface
@@ -107,7 +106,6 @@ public class MainActivity extends Activity {
         public void downloadUpdate(String fileUrl) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
                 checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                
                 requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
                 return;
             }
@@ -115,6 +113,8 @@ public class MainActivity extends Activity {
         }
 
         private void startDownloadProcess(String fileUrl) {
+            runOnUiThread(() -> Toast.makeText(mContext, "Downloading update...", Toast.LENGTH_SHORT).show());
+            
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(fileUrl));
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             
@@ -123,6 +123,7 @@ public class MainActivity extends Activity {
 
             DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
             final long downloadId = manager.enqueue(request);
+            
             new Thread(() -> {
                 boolean downloading = true;
                 while (downloading) {
@@ -150,19 +151,36 @@ public class MainActivity extends Activity {
                     if (cursor != null) cursor.close();
                     try { Thread.sleep(500); } catch (InterruptedException e) {}
                 }
+                // Small delay to ensure file is closed by system before installing
+                try { Thread.sleep(1000); } catch (InterruptedException e) {}
                 installApk(fileName);
             }).start();
         }
 
         private void installApk(String fileName) {
-            File file = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName);
-            Uri contentUri = FileProvider.getUriForFile(mContext, mContext.getPackageName() + ".provider", file);
-            
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivity(intent);
+            try {
+                File file = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName);
+                
+                if (!file.exists()) {
+                    runOnUiThread(() -> Toast.makeText(mContext, "Update file not found!", Toast.LENGTH_LONG).show());
+                    return;
+                }
+
+                Uri contentUri = FileProvider.getUriForFile(mContext, mContext.getPackageName() + ".provider", file);
+                
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
+                
+                // CRUCIAL FLAGS FOR INSTALLATION
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                
+                runOnUiThread(() -> Toast.makeText(mContext, "Opening Installer...", Toast.LENGTH_SHORT).show());
+                mContext.startActivity(intent);
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(mContext, "Error triggering install: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
         }
     }
 }
