@@ -12,8 +12,7 @@ android {
 
     signingConfigs {
         release {
-            storeFile file("comrade.jks") 
-            // These names MUST match the names in the 'env' section of build.yml
+            storeFile file("comrade.jks")
             storePassword System.getenv("SIGNING_STORE_PASSWORD")
             keyAlias "comrade"
             keyPassword System.getenv("SIGNING_KEY_PASSWORD")
