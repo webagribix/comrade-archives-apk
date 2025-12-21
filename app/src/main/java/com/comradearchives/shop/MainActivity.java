@@ -16,7 +16,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.Toast;
 import androidx.core.content.FileProvider;
 import java.io.File;
 
@@ -50,6 +50,9 @@ public class MainActivity extends Activity {
 
         webView.loadUrl("https://comradearchives.hstn.me/comrade_shop/");
         setContentView(webView);
+
+        // VISUAL CHANGE FOR UPDATE TEST
+        Toast.makeText(this, "Comrade Shop Updated to v2.6", Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -91,8 +94,8 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public int getAppVersionCode() {
-            // Hardcoded to 1 to bypass BuildConfig generation errors
-            return 1;
+            // Updated to 4 to match your new build.gradle version
+            return 4;
         }
 
         @JavascriptInterface
@@ -101,29 +104,25 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-public void downloadUpdate(String fileUrl) {
-    // Check if we have storage permission (for older Android)
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-        checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-        
-        // Request the permission
-        requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
-        return; // Stop here, the user needs to click again after allowing
-    }
+        public void downloadUpdate(String fileUrl) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+                checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                
+                requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+                return;
+            }
+            startDownloadProcess(fileUrl);
+        }
 
-    // If we have permission (or are on Android 10+ where scoped storage handles it), start download
-    startDownloadProcess(fileUrl);
-}
+        private void startDownloadProcess(String fileUrl) {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(fileUrl));
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            
+            final String fileName = "comrade_update.apk";
+            request.setDestinationInExternalFilesDir(mContext, Environment.DIRECTORY_DOWNLOADS, fileName);
 
-private void startDownloadProcess(String fileUrl) {
-    DownloadManager.Request request = new DownloadManager.Request(Uri.parse(fileUrl));
-    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-    
-    final String fileName = "comrade_update.apk";
-    request.setDestinationInExternalFilesDir(mContext, Environment.DIRECTORY_DOWNLOADS, fileName);
-
-    DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
-    final long downloadId = manager.enqueue(request);
+            DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+            final long downloadId = manager.enqueue(request);
             new Thread(() -> {
                 boolean downloading = true;
                 while (downloading) {
