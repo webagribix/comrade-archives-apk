@@ -23,8 +23,8 @@ android {
         applicationId "com.comradearchives.shop"
         minSdk 21
         targetSdk 34
-        versionCode 4
-        versionName "2.6"
+        versionCode 5
+        versionName "2.7"
     }
 
     buildTypes {
