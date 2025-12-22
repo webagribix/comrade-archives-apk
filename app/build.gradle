@@ -1,5 +1,7 @@
 plugins {
     id 'com.android.application'
+    // Add the Google Services plugin for Notifications
+    id 'com.google.gms.google-services' apply false 
 }
 
 android {
@@ -23,8 +25,8 @@ android {
         applicationId "com.comradearchives.shop"
         minSdk 21
         targetSdk 34
-        versionCode 5
-        versionName "2.7"
+        versionCode 6 // Bumped for your next update test
+        versionName "2.8"
     }
 
     buildTypes {
@@ -45,4 +47,11 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core:1.12.0'
     implementation 'com.google.android.material:material:1.11.0'
+    
+    // For Notifications (Firebase)
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation 'com.google.firebase:firebase-messaging'
+    
+    // For Location services
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
 }
