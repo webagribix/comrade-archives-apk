@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.application'
-    // Add the Google Services plugin for Notifications
-    id 'com.google.gms.google-services' apply false 
+    // Removed 'apply false' so the plugin can process your google-services.json
+    id 'com.google.gms.google-services' 
 }
 
 android {
@@ -25,7 +25,7 @@ android {
         applicationId "com.comradearchives.shop"
         minSdk 21
         targetSdk 34
-        versionCode 6 // Bumped for your next update test
+        versionCode 6 
         versionName "2.8"
     }
 
@@ -49,7 +49,8 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     
     // For Notifications (Firebase)
-    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    // Updated to a newer stable BOM version
+    implementation platform('com.google.firebase:firebase-bom:33.1.0')
     implementation 'com.google.firebase:firebase-messaging'
     
     // For Location services
